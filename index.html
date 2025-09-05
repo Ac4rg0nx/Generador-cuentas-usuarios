@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Cuentas de Usuario</title>
+    <title>Generador de Cuentas de Usuario para Google</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Incluimos la librería SheetJS (xlsx) para generar archivos Excel -->
+    <!-- Incluimos la librería SheetJS (xlsx) para generar archivos Excel/CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -22,8 +22,8 @@
             <svg class="mx-auto h-12 w-auto text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962A3 3 0 013 10.5V12a3 3 0 01-3-3m11.962 4.354a9.094 9.094 0 01-3.741.479 3 3 0 01-4.682-2.72m7.5-2.962V7.5a3 3 0 00-3-3M3 10.5a3 3 0 013 3m9-9a3 3 0 00-3-3M3 7.5a3 3 0 013-3m9 9V12m-9-4.5a3 3 0 013-3" />
             </svg>
-            <h1 class="text-3xl font-bold text-gray-900 mt-4">Generador de Cuentas de Usuario</h1>
-            <p class="mt-2 text-md text-gray-600">Sube un archivo o pega el texto para crear las cuentas.</p>
+            <h1 class="text-3xl font-bold text-gray-900 mt-4">Generador de Cuentas para Google</h1>
+            <p class="mt-2 text-md text-gray-600">Sube un archivo o pega el texto para crear un CSV de importación.</p>
         </div>
 
         <!-- Zona de carga de archivos -->
@@ -72,7 +72,7 @@
                 <svg class="inline-block w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v4.59L7.3 9.7a.75.75 0 00-1.1 1.02l3.25 3.5a.75.75 0 001.1 0l3.25-3.5a.75.75 0 10-1.1-1.02l-1.95 2.1V6.75z" clip-rule="evenodd" />
                 </svg>
-                Descargar Archivo Excel
+                Descargar Archivo CSV para Google
             </button>
         </div>
         
@@ -86,7 +86,8 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contraseña</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad Org.</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cambiar Contraseña</th>
                         </tr>
                     </thead>
                     <tbody id="preview-table-body" class="bg-white divide-y divide-gray-200">
@@ -110,8 +111,19 @@
         const errorText = document.getElementById('error-text');
 
         let processedData = [];
-        const FIXED_PASSWORD = "Ecca2526";
         const EMAIL_DOMAIN = "@eccaonline.org";
+
+        // Headers exactos requeridos por Google Workspace para la carga masiva.
+        const GOOGLE_CSV_HEADERS = [
+            "First Name [Required]", "Last Name [Required]", "Email Address [Required]", 
+            "Password [Required]", "Password Hash Function [UPLOAD ONLY]", "Org Unit Path [Required]", 
+            "New Primary Email [UPLOAD ONLY]", "Recovery Email", "Home Secondary Email", "Work Secondary Email", 
+            "Recovery Phone [MUST BE IN THE E.164 FORMAT]", "Work Phone", "Home Phone", "Mobile Phone", 
+            "Work Address", "Home Address", "Employee ID", "Employee Type", "Employee Title", 
+            "Manager Email", "Department", "Cost Center", "Building ID", "Floor Name", "Floor Section", 
+            "Change Password at Next Sign-In", "New Status [UPLOAD ONLY]", "New Licenses [UPLOAD ONLY]", 
+            "Advanced Protection Program enrollment"
+        ];
 
         // Función para capitalizar la primera letra de una cadena
         const capitalize = (s) => {
@@ -125,7 +137,6 @@
             return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
 
-        // Event listener para la carga de archivos
         fileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -135,7 +146,6 @@
             }
         });
 
-        // Event listener para el botón de generar desde texto
         generateButton.addEventListener('click', () => {
             const content = textInput.value;
             if (content.trim() === '') {
@@ -161,50 +171,47 @@
                 const parts = line.trim().split(/\s+/);
                 if (parts.length < 2) return;
 
-                // --- Lógica para identificar nombres compuestos ---
                 let namePartsCount = 1;
                 if (parts.length >= 4) {
-                    // Si hay 4 o más palabras, asumimos que los dos primeros son el nombre
                     namePartsCount = 2;
                 } else if (parts.length === 3) {
-                    // Si hay 3 palabras, comprobamos si la segunda es un nombre común
                     if (commonSecondNames.has(normalizeString(parts[1]).toUpperCase())) {
                         namePartsCount = 2;
                     }
                 }
-                // Si hay 2 palabras, namePartsCount se queda en 1 (comportamiento por defecto)
 
                 const nombre = parts.slice(0, namePartsCount).map(capitalize).join(' ');
                 const apellidos = parts.slice(namePartsCount).map(capitalize).join(' '); 
-                
                 const primerApellido = parts[namePartsCount];
                 const segundoApellido = parts.length > namePartsCount + 1 ? parts[namePartsCount + 1] : null;
-                // --- Fin de la lógica de nombres compuestos ---
                 
-                if (!primerApellido) return; // Si no hay apellido, saltar esta línea
+                if (!primerApellido) return;
 
                 const initial = normalizeString(nombre.charAt(0));
                 const firstSurnameForEmail = normalizeString(primerApellido);
                 
-                // Generar el email base
                 let email = `${initial}.${firstSurnameForEmail}${EMAIL_DOMAIN}`.toLowerCase();
 
-                // Comprobar si hay duplicados y aplicar la corrección
                 if (generatedEmails.has(email)) {
                     if (segundoApellido) {
                         const secondSurnameInitial = normalizeString(segundoApellido.charAt(0));
                         email = `${initial}.${firstSurnameForEmail}${secondSurnameInitial}${EMAIL_DOMAIN}`.toLowerCase();
                     }
                 }
-
                 generatedEmails.add(email);
 
-                processedData.push({
-                    "Nombre": nombre,
-                    "Apellidos": apellidos,
-                    "Email": email,
-                    "Contraseña": FIXED_PASSWORD
-                });
+                // Crear un objeto de usuario con la estructura de Google
+                const userRecord = {};
+                GOOGLE_CSV_HEADERS.forEach(header => userRecord[header] = ""); // Inicializar todos los campos
+
+                userRecord["First Name [Required]"] = nombre;
+                userRecord["Last Name [Required]"] = apellidos;
+                userRecord["Email Address [Required]"] = email;
+                userRecord["Password [Required]"] = "Ecca2526";
+                userRecord["Org Unit Path [Required]"] = "/Alumnado";
+                userRecord["Change Password at Next Sign-In"] = "TRUE";
+
+                processedData.push(userRecord);
             });
             
             if (processedData.length > 0) {
@@ -220,11 +227,9 @@
             reader.onload = (e) => {
                 processText(e.target.result);
             };
-            
             reader.onerror = () => {
                 showError("Ocurrió un error al leer el archivo.");
             };
-
             reader.readAsText(file);
         };
 
@@ -233,10 +238,11 @@
             processedData.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.Nombre}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Apellidos}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Email}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Contraseña}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item["First Name [Required]"]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Last Name [Required]"]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Email Address [Required]"]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Org Unit Path [Required]"]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Change Password at Next Sign-In"]}</td>
                 `;
                 previewTableBody.appendChild(row);
             });
@@ -248,13 +254,22 @@
         };
 
         downloadButton.addEventListener('click', () => {
-            const worksheet = XLSX.utils.json_to_sheet(processedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Cuentas de Usuarios");
+            // Aseguramos que el orden de las columnas es el correcto usando el array de headers
+            const worksheet = XLSX.utils.json_to_sheet(processedData, { header: GOOGLE_CSV_HEADERS });
             
-            worksheet['!cols'] = [ { wch: 20 }, { wch: 30 }, { wch: 40 }, { wch: 15 } ];
+            // Convertir la hoja a formato CSV
+            const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
 
-            XLSX.writeFile(workbook, "cuentas_generadas.xlsx");
+            // Crear un Blob para la descarga
+            const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "usuarios_para_google.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
 
         const showError = (message) => {
@@ -269,10 +284,8 @@
             errorMessage.classList.add('hidden');
             previewTableBody.innerHTML = '';
             fileNameDisplay.textContent = '';
-            // No limpiamos el textarea para que el usuario pueda corregir si hay un error
         };
 
     </script>
 </body>
 </html>
-
