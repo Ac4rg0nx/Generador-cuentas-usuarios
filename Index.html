@@ -12,6 +12,17 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .step-bubble {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            font-weight: 700;
+            color: white;
+            background-color: #4f46e5; /* indigo-600 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
@@ -20,150 +31,195 @@
         
         <div class="text-center mb-8">
             <svg class="mx-auto h-12 w-auto text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962A3 3 0 013 10.5V12a3 3 0 01-3-3m11.962 4.354a9.094 9.094 0 01-3.741.479 3 3 0 01-4.682-2.72m7.5-2.962V7.5a3 3 0 00-3-3M3 10.5a3 3 0 013 3m9-9a3 3 0 00-3-3M3 7.5a3 3 0 013-3m9 9V12m-9-4.5a3 3 0 013-3" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962A3 3 0 013 10.5V12a3 3 0 01-3-3m11.962 4.354a9.094 9.094 0 01-3.741.479 3 3 0 01-4.682-2.72m7.5-2.962V7.5a3 3 0 00-3-3M3 10.5a3 3 0 013 3m9-9a3 3 0 00-3-3M3 7.5a3 3 0 013-3m9 9V12m-9-4.5a3 3 0 013-3" />
             </svg>
             <h1 class="text-3xl font-bold text-gray-900 mt-4">Generador de Cuentas para Google</h1>
-            <p class="mt-2 text-md text-gray-600">Sube un archivo o pega el texto para crear un CSV de importación.</p>
+            <p class="mt-2 text-md text-gray-600">Crea un CSV de importación evitando duplicados.</p>
         </div>
 
-        <!-- Zona de carga de archivos -->
-        <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
-            <label for="file-upload" class="cursor-pointer">
-                <div class="flex flex-col items-center">
-                    <svg class="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25z" />
+        <!-- PASO 1: Cargar base de datos existente -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <div class="step-bubble">1</div>
+                <h2 class="ml-4 text-xl font-semibold text-gray-800">Cargar Base de Datos Existente (Opcional)</h2>
+            </div>
+            <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <label for="db-upload" class="cursor-pointer">
+                    <svg class="mx-auto w-10 h-10 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
                     </svg>
-                    <p class="mt-2 text-sm text-gray-600">
-                        <span class="font-semibold text-indigo-600">Haz clic para subir un archivo</span> o arrástralo aquí.
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">TXT o CSV con un nombre por línea.</p>
+                    <p class="mt-2 text-sm text-gray-600"><span class="font-semibold text-indigo-600">Selecciona un archivo Excel o CSV</span></p>
+                    <p class="text-xs text-gray-500 mt-1">Con los usuarios ya existentes en tu sistema.</p>
+                </label>
+                <input id="db-upload" type="file" class="sr-only" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                <p id="db-status" class="mt-4 text-sm font-medium text-green-700"></p>
+            </div>
+        </div>
+
+        <!-- PASO 2: Añadir nuevos usuarios -->
+        <div class="mb-6">
+            <div class="flex items-center mb-4">
+                <div class="step-bubble">2</div>
+                <h2 class="ml-4 text-xl font-semibold text-gray-800">Añadir Nuevos Nombres</h2>
+            </div>
+            <div id="file-upload-container" class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-6">
+                <label for="file-upload" class="cursor-pointer">
+                    <svg class="mx-auto w-10 h-10 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25z" />
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-600"><span class="font-semibold text-indigo-600">Sube un archivo TXT/CSV</span> o arrástralo aquí.</p>
+                </label>
+                <input id="file-upload" type="file" class="sr-only" accept=".txt,.csv">
+                <p id="file-name" class="mt-4 text-sm font-medium text-gray-700"></p>
+            </div>
+            <div class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink mx-4 text-gray-500 font-semibold">O</span><div class="flex-grow border-t border-gray-300"></div>
+            </div>
+            <div>
+                 <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">Pega los nombres aquí (uno por línea):</label>
+                 <textarea id="text-input" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Juan Pérez García&#10;José María López Hernández..."></textarea>
+                 <button id="generate-button" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generar desde Texto</button>
+            </div>
+        </div>
+
+        <!-- PASO 3: Vista Previa y Descarga -->
+         <div class="mt-8">
+            <div class="flex items-center mb-4">
+                <div class="step-bubble">3</div>
+                <h2 class="ml-4 text-xl font-semibold text-gray-800">Vista Previa y Descarga</h2>
+            </div>
+            <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline" id="error-text"></span>
+            </div>
+            
+            <!-- NUEVA SECCIÓN DE NOTIFICACIONES -->
+            <div id="notification-area" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4" role="alert">
+                <p class="font-bold">Aviso de Coincidencias</p>
+                <p>Se detectaron correos que ya existían. Se generaron las siguientes alternativas:</p>
+                <ul id="notification-list" class="list-disc list-inside mt-2 text-sm">
+                    <!-- Las notificaciones se insertarán aquí -->
+                </ul>
+            </div>
+
+            <div id="download-section" class="hidden text-center my-4">
+                <button id="download-button" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Descargar Archivo CSV para Google</button>
+            </div>
+            <div id="preview-section" class="hidden mt-4">
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50"><tr id="preview-header"></tr></thead>
+                        <tbody id="preview-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
                 </div>
-            </label>
-            <input id="file-upload" name="file-upload" type="file" class="sr-only" accept=".txt,.csv">
-            <p id="file-name" class="mt-4 text-sm font-medium text-gray-700"></p>
-        </div>
-        
-        <!-- Separador -->
-        <div class="relative flex py-5 items-center">
-            <div class="flex-grow border-t border-gray-300"></div>
-            <span class="flex-shrink mx-4 text-gray-500 font-semibold">O</span>
-            <div class="flex-grow border-t border-gray-300"></div>
-        </div>
-
-        <!-- Zona de entrada de texto -->
-        <div>
-             <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">Pega los nombres aquí (uno por línea):</label>
-             <textarea id="text-input" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Juan Pérez García&#10;José María López Hernández...&#10;Jorge Mateo Marín Mejía"></textarea>
-             <button id="generate-button" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105">
-                Generar desde Texto
-            </button>
-        </div>
-
-
-        <!-- Mensaje de error -->
-        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-6" role="alert">
-            <strong class="font-bold">Error:</strong>
-            <span class="block sm:inline" id="error-text"></span>
-        </div>
-
-        <!-- Botón de descarga -->
-        <div id="download-section" class="hidden text-center my-6">
-            <button id="download-button" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">
-                <svg class="inline-block w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v4.59L7.3 9.7a.75.75 0 00-1.1 1.02l3.25 3.5a.75.75 0 001.1 0l3.25-3.5a.75.75 0 10-1.1-1.02l-1.95 2.1V6.75z" clip-rule="evenodd" />
-                </svg>
-                Descargar Archivo CSV para Google
-            </button>
-        </div>
-        
-        <!-- Vista previa de la tabla -->
-        <div id="preview-section" class="hidden mt-6">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">Vista Previa de Datos</h2>
-            <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad Org.</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cambiar Contraseña</th>
-                        </tr>
-                    </thead>
-                    <tbody id="preview-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Las filas se insertarán aquí dinámicamente -->
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 
     <script>
+        // Elementos de la UI
+        const dbUpload = document.getElementById('db-upload');
+        const dbStatus = document.getElementById('db-status');
         const fileUpload = document.getElementById('file-upload');
         const fileNameDisplay = document.getElementById('file-name');
         const textInput = document.getElementById('text-input');
         const generateButton = document.getElementById('generate-button');
         const previewSection = document.getElementById('preview-section');
+        const previewHeader = document.getElementById('preview-header');
         const previewTableBody = document.getElementById('preview-table-body');
         const downloadSection = document.getElementById('download-section');
         const downloadButton = document.getElementById('download-button');
         const errorMessage = document.getElementById('error-message');
         const errorText = document.getElementById('error-text');
+        const notificationArea = document.getElementById('notification-area');
+        const notificationList = document.getElementById('notification-list');
 
+        // Almacenes de datos
         let processedData = [];
+        let existingEmails = new Set();
+        let duplicateNotifications = [];
         const EMAIL_DOMAIN = "@eccaonline.org";
-
-        // Headers exactos requeridos por Google Workspace para la carga masiva.
-        const GOOGLE_CSV_HEADERS = [
-            "First Name [Required]", "Last Name [Required]", "Email Address [Required]", 
-            "Password [Required]", "Password Hash Function [UPLOAD ONLY]", "Org Unit Path [Required]", 
-            "New Primary Email [UPLOAD ONLY]", "Recovery Email", "Home Secondary Email", "Work Secondary Email", 
-            "Recovery Phone [MUST BE IN THE E.164 FORMAT]", "Work Phone", "Home Phone", "Mobile Phone", 
-            "Work Address", "Home Address", "Employee ID", "Employee Type", "Employee Title", 
-            "Manager Email", "Department", "Cost Center", "Building ID", "Floor Name", "Floor Section", 
-            "Change Password at Next Sign-In", "New Status [UPLOAD ONLY]", "New Licenses [UPLOAD ONLY]", 
-            "Advanced Protection Program enrollment"
-        ];
-
-        // Función para capitalizar la primera letra de una cadena
-        const capitalize = (s) => {
-            if (typeof s !== 'string' || s.length === 0) return '';
-            return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-        };
         
-        // Normalizar y quitar acentos de una cadena
-        const normalizeString = (s) => {
-            if (typeof s !== 'string') return '';
-            return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-
-        fileUpload.addEventListener('change', (event) => {
+        // --- Lógica para cargar y procesar la base de datos existente ---
+        dbUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
-            if (file) {
-                resetUI();
-                fileNameDisplay.textContent = `Archivo seleccionado: ${file.name}`;
-                processFile(file);
-            }
+            if (!file) return;
+            
+            dbStatus.textContent = "Procesando base de datos...";
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                    if (json.length < 2) {
+                        showError("El archivo de base de datos está vacío o no tiene cabeceras.");
+                        dbStatus.textContent = "";
+                        return;
+                    }
+                    
+                    const headers = json[0];
+                    const emailIndex = headers.findIndex(h => typeof h === 'string' && h.toLowerCase().includes('email address'));
+                    
+                    if (emailIndex === -1) {
+                         showError('No se encontró la columna "Email Address [Required]" en el archivo de base de datos.');
+                         dbStatus.textContent = "";
+                         return;
+                    }
+                    
+                    existingEmails.clear();
+                    for (let i = 1; i < json.length; i++) {
+                        const email = json[i][emailIndex];
+                        if (email && typeof email === 'string') {
+                            existingEmails.add(email.trim().toLowerCase());
+                        }
+                    }
+                    dbStatus.textContent = `Base de datos cargada: ${existingEmails.size} usuarios existentes.`;
+                    hideError();
+                } catch (err) {
+                     showError("Error al procesar el archivo de base de datos. Asegúrate de que es un Excel o CSV válido.");
+                     dbStatus.textContent = "";
+                }
+            };
+            reader.readAsArrayBuffer(file);
         });
 
-        generateButton.addEventListener('click', () => {
-            const content = textInput.value;
-            if (content.trim() === '') {
-                showError("El cuadro de texto está vacío.");
-                return;
+        // --- Lógica para procesar los nuevos nombres ---
+        const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+        const normalizeString = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
+
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                resetGenerationUI();
+                fileNameDisplay.textContent = `Archivo: ${file.name}`;
+                const reader = new FileReader();
+                reader.onload = (e) => processText(e.target.result);
+                reader.readAsText(file);
             }
-            resetUI();
-            processText(content);
         });
         
+        generateButton.addEventListener('click', () => {
+             const content = textInput.value;
+             if (content.trim() === '') {
+                 showError("El cuadro de texto está vacío.");
+                 return;
+             }
+             resetGenerationUI();
+             processText(content);
+        });
+
         const processText = (content) => {
             const lines = content.split(/\r\n|\n/).filter(line => line.trim() !== '');
             processedData = []; 
-            const generatedEmails = new Set();
+            const generatedEmailsInBatch = new Set();
             const commonSecondNames = new Set(['MARIA', 'JOSE', 'JESUS', 'ANTONIO', 'MANUEL', 'FRANCISCO', 'JUAN', 'LUIS', 'ANGEL', 'MIGUEL', 'CARLOS', 'JAVIER']);
 
             if (lines.length === 0) {
-                showError("No se encontraron nombres válidos en el texto.");
+                showError("No se encontraron nombres válidos.");
                 return;
             }
 
@@ -172,13 +228,8 @@
                 if (parts.length < 2) return;
 
                 let namePartsCount = 1;
-                if (parts.length >= 4) {
-                    namePartsCount = 2;
-                } else if (parts.length === 3) {
-                    if (commonSecondNames.has(normalizeString(parts[1]).toUpperCase())) {
-                        namePartsCount = 2;
-                    }
-                }
+                if (parts.length >= 4) namePartsCount = 2;
+                else if (parts.length === 3 && commonSecondNames.has(normalizeString(parts[1]).toUpperCase())) namePartsCount = 2;
 
                 const nombre = parts.slice(0, namePartsCount).map(capitalize).join(' ');
                 const apellidos = parts.slice(namePartsCount).map(capitalize).join(' '); 
@@ -187,54 +238,65 @@
                 
                 if (!primerApellido) return;
 
+                let finalEmail = '';
                 const initial = normalizeString(nombre.charAt(0));
-                const firstSurnameForEmail = normalizeString(primerApellido);
-                
-                let email = `${initial}.${firstSurnameForEmail}${EMAIL_DOMAIN}`.toLowerCase();
+                const firstSurname = normalizeString(primerApellido);
+                let emailAttempt = `${initial}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
+                let counter = 0;
+                let wasCollision = false;
 
-                if (generatedEmails.has(email)) {
-                    if (segundoApellido) {
-                        const secondSurnameInitial = normalizeString(segundoApellido.charAt(0));
-                        email = `${initial}.${firstSurnameForEmail}${secondSurnameInitial}${EMAIL_DOMAIN}`.toLowerCase();
+                while(true) {
+                    if (!existingEmails.has(emailAttempt) && !generatedEmailsInBatch.has(emailAttempt)) {
+                        finalEmail = emailAttempt;
+                        break;
+                    }
+                    
+                    wasCollision = true;
+                    counter++;
+                    if(counter === 1 && segundoApellido) {
+                        const secondInitial = normalizeString(segundoApellido.charAt(0));
+                        emailAttempt = `${initial}.${firstSurname}${secondInitial}${EMAIL_DOMAIN}`.toLowerCase();
+                    } else {
+                        const effectiveCounter = counter === 1 ? 2 : counter;
+                        emailAttempt = `${initial}.${firstSurname}${effectiveCounter}${EMAIL_DOMAIN}`.toLowerCase();
                     }
                 }
-                generatedEmails.add(email);
+                
+                if (wasCollision) {
+                    duplicateNotifications.push(`<b>${nombre} ${apellidos}:</b> Se generó el correo alternativo <b>${finalEmail}</b>`);
+                }
 
-                // Crear un objeto de usuario con la estructura de Google
-                const userRecord = {};
-                GOOGLE_CSV_HEADERS.forEach(header => userRecord[header] = ""); // Inicializar todos los campos
+                generatedEmailsInBatch.add(finalEmail);
 
-                userRecord["First Name [Required]"] = nombre;
-                userRecord["Last Name [Required]"] = apellidos;
-                userRecord["Email Address [Required]"] = email;
-                userRecord["Password [Required]"] = "Ecca2526";
-                userRecord["Org Unit Path [Required]"] = "/Alumnado";
-                userRecord["Change Password at Next Sign-In"] = "TRUE";
-
+                const userRecord = {
+                    "First Name [Required]": nombre,
+                    "Last Name [Required]": apellidos,
+                    "Email Address [Required]": finalEmail,
+                    "Password [Required]": "Ecca2526",
+                    "Org Unit Path [Required]": "/Alumnado",
+                    "Change Password at Next Sign-In": "TRUE"
+                };
                 processedData.push(userRecord);
             });
             
             if (processedData.length > 0) {
                 displayPreview();
-                showDownloadButton();
             } else {
-                showError("No se pudieron procesar nombres del texto. Asegúrate de que el formato sea 'Nombre Apellido(s)' por línea.");
+                showError("No se pudieron procesar nombres. Asegúrate de que el formato sea 'Nombre Apellido(s)' por línea.");
             }
         };
 
-        const processFile = (file) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                processText(e.target.result);
-            };
-            reader.onerror = () => {
-                showError("Ocurrió un error al leer el archivo.");
-            };
-            reader.readAsText(file);
-        };
-
         const displayPreview = () => {
-            previewTableBody.innerHTML = ''; 
+            previewHeader.innerHTML = '';
+            previewTableBody.innerHTML = '';
+            
+            ["Nombre", "Apellidos", "Email Generado", "Unidad Org."].forEach(text => {
+                const th = document.createElement('th');
+                th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+                th.textContent = text;
+                previewHeader.appendChild(th);
+            });
+            
             processedData.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -242,25 +304,37 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Last Name [Required]"]}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Email Address [Required]"]}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Org Unit Path [Required]"]}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item["Change Password at Next Sign-In"]}</td>
                 `;
                 previewTableBody.appendChild(row);
             });
-            previewSection.classList.remove('hidden');
-        };
 
-        const showDownloadButton = () => {
+            if (duplicateNotifications.length > 0) {
+                notificationList.innerHTML = '';
+                duplicateNotifications.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.innerHTML = msg;
+                    notificationList.appendChild(li);
+                });
+                notificationArea.classList.remove('hidden');
+            }
+
+            previewSection.classList.remove('hidden');
             downloadSection.classList.remove('hidden');
         };
 
         downloadButton.addEventListener('click', () => {
-            // Aseguramos que el orden de las columnas es el correcto usando el array de headers
-            const worksheet = XLSX.utils.json_to_sheet(processedData, { header: GOOGLE_CSV_HEADERS });
+            const allGoogleHeaders = ["First Name [Required]", "Last Name [Required]", "Email Address [Required]", "Password [Required]", "Password Hash Function [UPLOAD ONLY]", "Org Unit Path [Required]", "New Primary Email [UPLOAD ONLY]", "Recovery Email", "Home Secondary Email", "Work Secondary Email", "Recovery Phone [MUST BE IN THE E.164 FORMAT]", "Work Phone", "Home Phone", "Mobile Phone", "Work Address", "Home Address", "Employee ID", "Employee Type", "Employee Title", "Manager Email", "Department", "Cost Center", "Building ID", "Floor Name", "Floor Section", "Change Password at Next Sign-In", "New Status [UPLOAD ONLY]", "New Licenses [UPLOAD ONLY]", "Advanced Protection Program enrollment"];
             
-            // Convertir la hoja a formato CSV
-            const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+            const fullDataForCsv = processedData.map(user => {
+               const fullUser = {};
+               allGoogleHeaders.forEach(header => {
+                   fullUser[header] = user[header] || "";
+               });
+               return fullUser;
+            });
 
-            // Crear un Blob para la descarga
+            const worksheet = XLSX.utils.json_to_sheet(fullDataForCsv, { header: allGoogleHeaders });
+            const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
             const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -272,16 +346,17 @@
             document.body.removeChild(link);
         });
 
-        const showError = (message) => {
-            errorText.textContent = message;
-            errorMessage.classList.remove('hidden');
-        };
-
-        const resetUI = () => {
+        // Funciones de utilidad de la UI
+        const showError = (message) => { errorText.textContent = message; errorMessage.classList.remove('hidden'); };
+        const hideError = () => errorMessage.classList.add('hidden');
+        const resetGenerationUI = () => {
             processedData = [];
+            duplicateNotifications = [];
+            notificationArea.classList.add('hidden');
+            notificationList.innerHTML = '';
             previewSection.classList.add('hidden');
             downloadSection.classList.add('hidden');
-            errorMessage.classList.add('hidden');
+            hideError();
             previewTableBody.innerHTML = '';
             fileNameDisplay.textContent = '';
         };
@@ -289,3 +364,4 @@
     </script>
 </body>
 </html>
+
