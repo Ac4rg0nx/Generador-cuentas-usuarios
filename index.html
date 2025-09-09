@@ -93,12 +93,10 @@
                 <span class="block sm:inline" id="error-text"></span>
             </div>
             
-            <!-- NUEVA SECCIÓN DE NOTIFICACIONES -->
             <div id="notification-area" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4" role="alert">
                 <p class="font-bold">Aviso de Coincidencias</p>
                 <p>Se detectaron correos que ya existían. Se generaron las siguientes alternativas:</p>
                 <ul id="notification-list" class="list-disc list-inside mt-2 text-sm">
-                    <!-- Las notificaciones se insertarán aquí -->
                 </ul>
             </div>
 
@@ -117,7 +115,7 @@
     </div>
 
     <script>
-        // Elementos de la UI
+        // UI Elements
         const dbUpload = document.getElementById('db-upload');
         const dbStatus = document.getElementById('db-status');
         const fileUpload = document.getElementById('file-upload');
@@ -134,13 +132,13 @@
         const notificationArea = document.getElementById('notification-area');
         const notificationList = document.getElementById('notification-list');
 
-        // Almacenes de datos
+        // Data Stores
         let processedData = [];
         let existingEmails = new Set();
         let duplicateNotifications = [];
         const EMAIL_DOMAIN = "@eccaonline.org";
         
-        // --- Lógica para cargar y procesar la base de datos existente ---
+        // --- Logic for loading and processing the existing database ---
         dbUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -187,7 +185,7 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // --- Lógica para procesar los nuevos nombres ---
+        // --- Logic for processing new names ---
         const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
         const normalizeString = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
 
@@ -214,15 +212,17 @@
 
         const processText = (content) => {
             const lines = content.split(/\r\n|\n/).filter(line => line.trim() !== '');
-            processedData = []; 
-            const generatedEmailsInBatch = new Set();
             const commonSecondNames = new Set(['MARIA', 'JOSE', 'JESUS', 'ANTONIO', 'MANUEL', 'FRANCISCO', 'JUAN', 'LUIS', 'ANGEL', 'MIGUEL', 'CARLOS', 'JAVIER']);
-
+            
             if (lines.length === 0) {
                 showError("No se encontraron nombres válidos.");
                 return;
             }
 
+            // --- REFACTORED LOGIC ---
+
+            // ** FASE 1: Parsear nombres y crear lista preliminar **
+            let preliminaryUsers = [];
             lines.forEach(line => {
                 const parts = line.trim().split(/\s+/);
                 if (parts.length < 2) return;
@@ -234,14 +234,24 @@
                 const nombre = parts.slice(0, namePartsCount).map(capitalize).join(' ');
                 const apellidos = parts.slice(namePartsCount).map(capitalize).join(' '); 
                 const primerApellido = parts[namePartsCount];
-                const segundoApellido = parts.length > namePartsCount + 1 ? parts[namePartsCount + 1] : null;
                 
                 if (!primerApellido) return;
 
-                let finalEmail = '';
+                const segundoApellido = parts.length > namePartsCount + 1 ? parts[namePartsCount + 1] : null;
                 const initial = normalizeString(nombre.charAt(0));
                 const firstSurname = normalizeString(primerApellido);
-                let emailAttempt = `${initial}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
+                const preliminaryEmail = `${initial}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
+                
+                preliminaryUsers.push({ nombre, apellidos, primerApellido, segundoApellido, preliminaryEmail });
+            });
+
+            // ** FASE 2: Verificar duplicados y generar lista final **
+            const generatedEmailsInBatch = new Set();
+            processedData = []; // Reset final data
+
+            preliminaryUsers.forEach(user => {
+                let emailAttempt = user.preliminaryEmail;
+                let finalEmail = '';
                 let counter = 0;
                 let wasCollision = false;
 
@@ -253,30 +263,34 @@
                     
                     wasCollision = true;
                     counter++;
-                    if(counter === 1 && segundoApellido) {
-                        const secondInitial = normalizeString(segundoApellido.charAt(0));
+
+                    if(counter === 1 && user.segundoApellido) {
+                        const secondInitial = normalizeString(user.segundoApellido.charAt(0));
+                        const firstSurname = normalizeString(user.primerApellido);
+                        const initial = normalizeString(user.nombre.charAt(0));
                         emailAttempt = `${initial}.${firstSurname}${secondInitial}${EMAIL_DOMAIN}`.toLowerCase();
                     } else {
                         const effectiveCounter = counter === 1 ? 2 : counter;
+                        const firstSurname = normalizeString(user.primerApellido);
+                        const initial = normalizeString(user.nombre.charAt(0));
                         emailAttempt = `${initial}.${firstSurname}${effectiveCounter}${EMAIL_DOMAIN}`.toLowerCase();
                     }
                 }
                 
                 if (wasCollision) {
-                    duplicateNotifications.push(`<b>${nombre} ${apellidos}:</b> Se generó el correo alternativo <b>${finalEmail}</b>`);
+                    duplicateNotifications.push(`<b>${user.nombre} ${user.apellidos}:</b> Se generó el correo alternativo <b>${finalEmail}</b>`);
                 }
 
                 generatedEmailsInBatch.add(finalEmail);
 
-                const userRecord = {
-                    "First Name [Required]": nombre,
-                    "Last Name [Required]": apellidos,
+                processedData.push({
+                    "First Name [Required]": user.nombre,
+                    "Last Name [Required]": user.apellidos,
                     "Email Address [Required]": finalEmail,
                     "Password [Required]": "Ecca2526",
                     "Org Unit Path [Required]": "/Alumnado",
                     "Change Password at Next Sign-In": "TRUE"
-                };
-                processedData.push(userRecord);
+                });
             });
             
             if (processedData.length > 0) {
@@ -346,7 +360,7 @@
             document.body.removeChild(link);
         });
 
-        // Funciones de utilidad de la UI
+        // UI Utility Functions
         const showError = (message) => { errorText.textContent = message; errorMessage.classList.remove('hidden'); };
         const hideError = () => errorMessage.classList.add('hidden');
         const resetGenerationUI = () => {
