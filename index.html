@@ -219,8 +219,6 @@
                 return;
             }
 
-            // --- REFACTORED LOGIC ---
-
             // ** FASE 1: Parsear nombres y crear lista preliminar **
             let preliminaryUsers = [];
             lines.forEach(line => {
@@ -232,17 +230,29 @@
                 else if (parts.length === 3 && commonSecondNames.has(normalizeString(parts[1]).toUpperCase())) namePartsCount = 2;
 
                 const nombre = parts.slice(0, namePartsCount).map(capitalize).join(' ');
+                const nombreParts = nombre.split(' ');
+
                 const apellidos = parts.slice(namePartsCount).map(capitalize).join(' '); 
                 const primerApellido = parts[namePartsCount];
                 
                 if (!primerApellido) return;
 
                 const segundoApellido = parts.length > namePartsCount + 1 ? parts[namePartsCount + 1] : null;
-                const initial = normalizeString(nombre.charAt(0));
+
+                // --- NUEVA LÓGICA PARA INICIALES ---
+                let emailInitials;
+                if (nombreParts.length > 1) {
+                    // Nombre compuesto: tomar todas las iniciales (ej: jl)
+                    emailInitials = normalizeString(nombreParts.map(n => n.charAt(0)).join(''));
+                } else {
+                    // Nombre simple: tomar una inicial (ej: j)
+                    emailInitials = normalizeString(nombre.charAt(0));
+                }
+
                 const firstSurname = normalizeString(primerApellido);
-                const preliminaryEmail = `${initial}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
+                const preliminaryEmail = `${emailInitials}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
                 
-                preliminaryUsers.push({ nombre, apellidos, primerApellido, segundoApellido, preliminaryEmail });
+                preliminaryUsers.push({ nombre, apellidos, primerApellido, segundoApellido, preliminaryEmail, emailInitials });
             });
 
             // ** FASE 2: Verificar duplicados y generar lista final **
@@ -263,17 +273,15 @@
                     
                     wasCollision = true;
                     counter++;
+                    
+                    const firstSurname = normalizeString(user.primerApellido);
 
                     if(counter === 1 && user.segundoApellido) {
                         const secondInitial = normalizeString(user.segundoApellido.charAt(0));
-                        const firstSurname = normalizeString(user.primerApellido);
-                        const initial = normalizeString(user.nombre.charAt(0));
-                        emailAttempt = `${initial}.${firstSurname}${secondInitial}${EMAIL_DOMAIN}`.toLowerCase();
+                        emailAttempt = `${user.emailInitials}.${firstSurname}${secondInitial}${EMAIL_DOMAIN}`.toLowerCase();
                     } else {
                         const effectiveCounter = counter === 1 ? 2 : counter;
-                        const firstSurname = normalizeString(user.primerApellido);
-                        const initial = normalizeString(user.nombre.charAt(0));
-                        emailAttempt = `${initial}.${firstSurname}${effectiveCounter}${EMAIL_DOMAIN}`.toLowerCase();
+                        emailAttempt = `${user.emailInitials}.${firstSurname}${effectiveCounter}${EMAIL_DOMAIN}`.toLowerCase();
                     }
                 }
                 
