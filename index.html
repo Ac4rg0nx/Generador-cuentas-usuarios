@@ -77,7 +77,7 @@
             </div>
             <div>
                  <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">Pega los nombres aquí (uno por línea):</label>
-                 <textarea id="text-input" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Juan Pérez García&#10;José María López Hernández..."></textarea>
+                 <textarea id="text-input" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Juan Pérez García&#10;María del Carmen Ruiz Santana..."></textarea>
                  <button id="generate-button" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generar desde Texto</button>
             </div>
         </div>
@@ -212,8 +212,6 @@
 
         const processText = (content) => {
             const lines = content.split(/\r\n|\n/).filter(line => line.trim() !== '');
-            const commonSecondNames = new Set(['MARIA', 'JOSE', 'JESUS', 'ANTONIO', 'MANUEL', 'FRANCISCO', 'JUAN', 'LUIS', 'ANGEL', 'MIGUEL', 'CARLOS', 'JAVIER']);
-            
             if (lines.length === 0) {
                 showError("No se encontraron nombres válidos.");
                 return;
@@ -221,34 +219,33 @@
 
             // ** FASE 1: Parsear nombres y crear lista preliminar **
             let preliminaryUsers = [];
+            const prepositions = new Set(['de', 'del', 'la', 'los', 'las']);
+
             lines.forEach(line => {
                 const parts = line.trim().split(/\s+/);
-                if (parts.length < 2) return;
+                if (parts.length < 3) return; // Se necesita al menos 1 nombre y 2 apellidos
 
-                let namePartsCount = 1;
-                if (parts.length >= 4) namePartsCount = 2;
-                else if (parts.length === 3 && commonSecondNames.has(normalizeString(parts[1]).toUpperCase())) namePartsCount = 2;
+                // --- NUEVA LÓGICA DE PARSEO DE NOMBRES/APELLIDOS ---
+                const apellidoCount = 2;
+                const namePartsCount = parts.length - apellidoCount;
 
-                const nombre = parts.slice(0, namePartsCount).map(capitalize).join(' ');
-                const nombreParts = nombre.split(' ');
+                const nombrePartsRaw = parts.slice(0, namePartsCount);
+                const nombre = nombrePartsRaw.map(capitalize).join(' ');
 
-                const apellidos = parts.slice(namePartsCount).map(capitalize).join(' '); 
-                const primerApellido = parts[namePartsCount];
+                const apellidosPartsRaw = parts.slice(namePartsCount);
+                const apellidos = apellidosPartsRaw.map(capitalize).join(' ');
+                const primerApellido = apellidosPartsRaw[0];
+                const segundoApellido = apellidosPartsRaw.length > 1 ? apellidosPartsRaw[1] : null;
                 
                 if (!primerApellido) return;
 
-                const segundoApellido = parts.length > namePartsCount + 1 ? parts[namePartsCount + 1] : null;
+                // --- NUEVA LÓGICA PARA INICIALES CON PREPOSICIONES ---
+                const nameWordsForInitials = nombrePartsRaw
+                    .map(p => p.toLowerCase())
+                    .filter(p => !prepositions.has(p));
 
-                // --- NUEVA LÓGICA PARA INICIALES ---
-                let emailInitials;
-                if (nombreParts.length > 1) {
-                    // Nombre compuesto: tomar todas las iniciales (ej: jl)
-                    emailInitials = normalizeString(nombreParts.map(n => n.charAt(0)).join(''));
-                } else {
-                    // Nombre simple: tomar una inicial (ej: j)
-                    emailInitials = normalizeString(nombre.charAt(0));
-                }
-
+                const emailInitials = normalizeString(nameWordsForInitials.map(n => n.charAt(0)).join(''));
+                
                 const firstSurname = normalizeString(primerApellido);
                 const preliminaryEmail = `${emailInitials}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
                 
@@ -304,7 +301,7 @@
             if (processedData.length > 0) {
                 displayPreview();
             } else {
-                showError("No se pudieron procesar nombres. Asegúrate de que el formato sea 'Nombre Apellido(s)' por línea.");
+                showError("No se pudieron procesar nombres. Asegúrate de que el formato sea 'Nombre(s) Apellido Apellido' por línea.");
             }
         };
 
@@ -386,4 +383,3 @@
     </script>
 </body>
 </html>
-
