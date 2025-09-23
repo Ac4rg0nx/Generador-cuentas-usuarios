@@ -78,7 +78,8 @@
             <div>
                  <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">Pega los nombres aquí (uno por línea):</label>
                  <textarea id="text-input" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Juan Pérez García&#10;María del Carmen Ruiz Santana..."></textarea>
-                 <button id="generate-button" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generar desde Texto</button>
+                 <p class="text-xs text-gray-500 mt-2">Este botón primero comprobará que los usuarios no existan en la base de datos antes de generar los correos.</p>
+                 <button id="generate-button" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Comprobar y Generar Usuarios</button>
             </div>
         </div>
 
@@ -94,7 +95,7 @@
             </div>
             
             <div id="notification-area" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4" role="alert">
-                <p class="font-bold">Aviso de Coincidencias</p>
+                <p class="font-bold">Aviso de Coincidencias de Correo</p>
                 <p>Se detectaron correos que ya existían. Se generaron las siguientes alternativas:</p>
                 <ul id="notification-list" class="list-disc list-inside mt-2 text-sm">
                 </ul>
@@ -131,10 +132,11 @@
         const errorText = document.getElementById('error-text');
         const notificationArea = document.getElementById('notification-area');
         const notificationList = document.getElementById('notification-list');
-
+        
         // Data Stores
         let processedData = [];
         let existingEmails = new Set();
+        let existingUsersByName = new Map();
         let duplicateNotifications = [];
         const EMAIL_DOMAIN = "@eccaonline.org";
         
@@ -159,23 +161,35 @@
                         return;
                     }
                     
-                    const headers = json[0];
-                    const emailIndex = headers.findIndex(h => typeof h === 'string' && h.toLowerCase().includes('email address'));
+                    const headers = json[0].map(h => String(h).toLowerCase());
+                    const emailIndex = headers.indexOf('email address [required]');
+                    const firstNameIndex = headers.indexOf('first name [required]');
+                    const lastNameIndex = headers.indexOf('last name [required]');
                     
-                    if (emailIndex === -1) {
-                         showError('No se encontró la columna "Email Address [Required]" en el archivo de base de datos.');
+                    if (emailIndex === -1 || firstNameIndex === -1 || lastNameIndex === -1) {
+                         showError('El archivo de base de datos no contiene las columnas requeridas: "First Name", "Last Name" y "Email Address".');
                          dbStatus.textContent = "";
                          return;
                     }
                     
                     existingEmails.clear();
+                    existingUsersByName.clear();
+
                     for (let i = 1; i < json.length; i++) {
-                        const email = json[i][emailIndex];
+                        const row = json[i];
+                        const email = row[emailIndex];
+                        const firstName = row[firstNameIndex];
+                        const lastName = row[lastNameIndex];
+
                         if (email && typeof email === 'string') {
                             existingEmails.add(email.trim().toLowerCase());
                         }
+                        if (firstName && lastName) {
+                            const normalizedFullName = (String(firstName) + ' ' + String(lastName)).trim().toLowerCase();
+                            existingUsersByName.set(normalizedFullName, { email: email, firstName, lastName });
+                        }
                     }
-                    dbStatus.textContent = `Base de datos cargada: ${existingEmails.size} usuarios existentes.`;
+                    dbStatus.textContent = `Base de datos cargada: ${existingUsersByName.size} usuarios existentes.`;
                     hideError();
                 } catch (err) {
                      showError("Error al procesar el archivo de base de datos. Asegúrate de que es un Excel o CSV válido.");
@@ -223,40 +237,62 @@
 
             lines.forEach(line => {
                 const parts = line.trim().split(/\s+/);
-                if (parts.length < 3) return; // Se necesita al menos 1 nombre y 2 apellidos
+                if (parts.length < 3) return; 
 
-                // --- NUEVA LÓGICA DE PARSEO DE NOMBRES/APELLIDOS ---
                 const apellidoCount = 2;
                 const namePartsCount = parts.length - apellidoCount;
-
                 const nombrePartsRaw = parts.slice(0, namePartsCount);
                 const nombre = nombrePartsRaw.map(capitalize).join(' ');
-
                 const apellidosPartsRaw = parts.slice(namePartsCount);
                 const apellidos = apellidosPartsRaw.map(capitalize).join(' ');
+                
+                preliminaryUsers.push({ line, nombre, apellidos });
+            });
+
+            // ** FASE 1.5: Comprobar usuarios ya existentes y detener si se encuentran **
+            const alreadyExistingFound = [];
+            preliminaryUsers.forEach(user => {
+                const normalizedFullName = (user.nombre + ' ' + user.apellidos).trim().toLowerCase();
+                const existingUser = existingUsersByName.get(normalizedFullName);
+
+                if (existingUser) {
+                    alreadyExistingFound.push(`<b>${user.nombre} ${user.apellidos}</b> (Correo: ${existingUser.email})`);
+                }
+            });
+            
+            if (alreadyExistingFound.length > 0) {
+                const errorMsg = "Se detectaron usuarios que ya existen. Elimínelos de la lista para continuar:<br><br>" + alreadyExistingFound.join('<br>');
+                showError(errorMsg);
+                return; // Detiene la ejecución por completo
+            }
+
+            // ** FASE 2: Generar correos para los usuarios genuinamente nuevos **
+            const finalUserList = [];
+            preliminaryUsers.forEach(user => {
+                const parts = user.line.trim().split(/\s+/);
+                const apellidoCount = 2;
+                const namePartsCount = parts.length - apellidoCount;
+                const nombrePartsRaw = parts.slice(0, namePartsCount);
+                const apellidosPartsRaw = parts.slice(namePartsCount);
                 const primerApellido = apellidosPartsRaw[0];
                 const segundoApellido = apellidosPartsRaw.length > 1 ? apellidosPartsRaw[1] : null;
-                
-                if (!primerApellido) return;
 
-                // --- NUEVA LÓGICA PARA INICIALES CON PREPOSICIONES ---
                 const nameWordsForInitials = nombrePartsRaw
                     .map(p => p.toLowerCase())
                     .filter(p => !prepositions.has(p));
 
                 const emailInitials = normalizeString(nameWordsForInitials.map(n => n.charAt(0)).join(''));
-                
                 const firstSurname = normalizeString(primerApellido);
                 const preliminaryEmail = `${emailInitials}.${firstSurname}${EMAIL_DOMAIN}`.toLowerCase();
                 
-                preliminaryUsers.push({ nombre, apellidos, primerApellido, segundoApellido, preliminaryEmail, emailInitials });
+                finalUserList.push({ nombre: user.nombre, apellidos: user.apellidos, primerApellido, segundoApellido, preliminaryEmail, emailInitials });
             });
 
-            // ** FASE 2: Verificar duplicados y generar lista final **
+            // ** FASE 3: Verificar duplicados de correo y generar lista final **
             const generatedEmailsInBatch = new Set();
-            processedData = []; // Reset final data
+            processedData = []; 
 
-            preliminaryUsers.forEach(user => {
+            finalUserList.forEach(user => {
                 let emailAttempt = user.preliminaryEmail;
                 let finalEmail = '';
                 let counter = 0;
@@ -300,11 +336,11 @@
             
             if (processedData.length > 0) {
                 displayPreview();
-            } else {
-                showError("No se pudieron procesar nombres. Asegúrate de que el formato sea 'Nombre(s) Apellido Apellido' por línea.");
+            } else if (alreadyExistingFound.length === 0) {
+                showError("No se pudieron procesar nombres. Asegúrese de que el formato sea 'Nombre(s) Apellido Apellido' por línea.");
             }
         };
-
+        
         const displayPreview = () => {
             previewHeader.innerHTML = '';
             previewTableBody.innerHTML = '';
@@ -366,7 +402,7 @@
         });
 
         // UI Utility Functions
-        const showError = (message) => { errorText.textContent = message; errorMessage.classList.remove('hidden'); };
+        const showError = (message) => { errorText.innerHTML = message; errorMessage.classList.remove('hidden'); };
         const hideError = () => errorMessage.classList.add('hidden');
         const resetGenerationUI = () => {
             processedData = [];
@@ -383,3 +419,4 @@
     </script>
 </body>
 </html>
+
